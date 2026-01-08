@@ -1,0 +1,16 @@
+# Abhängigkeiten
+node_modules/
+
+# Systemdateien
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+
+# Falls du Zertifikate hast
+*.pem
+*.key
+
+# Umgebungsvariablen (für später)
+.env
