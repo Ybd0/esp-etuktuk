@@ -3,7 +3,7 @@ const http = require('http');
 const { Server } = require("socket.io");
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
-const { Pool } = require('pg'); // NEU: Postgres
+const { Pool } = require('pg'); // Postgres
 
 const app = express();
 const server = http.createServer(app);
@@ -14,7 +14,7 @@ const KEYCLOAK_PUBLIC_URL = 'https://auth.birguel.de';
 const KEYCLOAK_INTERNAL_URL = 'http://localhost:8080'; 
 const REALM = 'iot-project'; 
 
-// NEU: Datenbank Verbindung
+// Datenbank Verbindung
 const db = new Pool({
     user: 'iot_user',
     host: 'localhost',
@@ -38,7 +38,7 @@ function getKey(header, callback){
   });
 }
 
-// --- NEU: API ENDPUNKTE FÜR BUCHUNGEN ---
+// API ENDPUNKTE FÜR BUCHUNGEN ---
 
 // 1. Alle Buchungen abrufen (für den Kalender)
 app.get('/api/bookings', async (req, res) => {
@@ -60,7 +60,7 @@ app.get('/api/bookings', async (req, res) => {
 
 // 2. Neue Buchung erstellen
 app.post('/api/bookings', async (req, res) => {
-    // Hier prüfen wir das Token manuell, da es ein normaler HTTP Request ist
+    // Hier wird der Token manuell überprüft, da es ein normaler HTTP Request ist
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).send("Kein Token");
     
@@ -87,7 +87,7 @@ app.post('/api/bookings', async (req, res) => {
             if (conflict.rows.length > 0) return res.status(409).json({ error: "Zeitraum schon belegt!" });
 
             // REGEL C: Wochenkontingent (2 Stunden = 120 min)
-            // Wir summieren alle Buchungen des Users der letzten 7 Tage + Zukunft
+            // Hier werden alle Buchungen des Users der letzten 7 Tage + Zukunft summiert
             const quota = await db.query(
                 `SELECT SUM(EXTRACT(EPOCH FROM (end_time - start_time))/3600) as hours 
                  FROM bookings WHERE user_id = $1 AND start_time > NOW() - INTERVAL '7 days'`,
@@ -117,14 +117,14 @@ app.post('/api/bookings', async (req, res) => {
 
 // --- SOCKET LOGIK ---
 
-// --- SOCKET MIDDLEWARE (Kopiere diesen ganzen Block über deinen alten io.use) ---
+// --- SOCKET MIDDLEWARE
 
 io.use((socket, next) => {
     // 1. API Key Prüfung (für ESP32 und Simulator)
     const apiKeyAuth = socket.handshake.auth.apiKey;
     const apiKeyQuery = socket.handshake.query.apiKey; // Wichtig für C++
     
-    // Hier deinen echten Key eintragen!
+    // Hier den Key eintragen!
     if (apiKeyAuth === "geheim123" || apiKeyQuery === "geheim123") {
         socket.user = { username: "ESP-Device", roles: [] }; 
         return next();
@@ -154,10 +154,9 @@ io.use((socket, next) => {
         const resourceAccess = decoded.resource_access || {};
         const clientRoles = (resourceAccess['esp-web-app'] && resourceAccess['esp-web-app'].roles) ? resourceAccess['esp-web-app'].roles : [];
         const allRoles = [...realmRoles, ...clientRoles];
-
-        // --- HIER IST DER WICHTIGE FIX ---
+        
         socket.user = {
-            sub: decoded.sub,            // <--- DAS HAT GEFEHLT (User ID für Datenbank)
+            sub: decoded.sub,            
             username: decoded.preferred_username,
             roles: allRoles
         };
@@ -169,7 +168,7 @@ io.on('connection', (socket) => {
     socket.on('esp-gps', (data) => io.emit('update-map', data));
     socket.on('esp-led-status', (status) => io.emit('update-led-ui', status));
 
-    // WICHTIG: Die neue Schalt-Logik
+    // Die LED Schalt logig
     socket.on('toggle-led', async (command) => {
         
         // SICHERHEITS-CHECK 1: Ist der User überhaupt definiert?
@@ -178,7 +177,7 @@ io.on('connection', (socket) => {
             return socket.emit('error-msg', 'Fehler: Benutzer nicht korrekt identifiziert.');
         }
 
-        // SICHERHEITS-CHECK 2: Admin darf immer (Optional, falls du das willst)
+        // SICHERHEITS-CHECK 2: Admin darf immer (Optional)
         // if (socket.user.roles.includes('admin')) {
         //    io.emit('cmd-led', command);
         //    return;
@@ -186,7 +185,7 @@ io.on('connection', (socket) => {
 
         try {
             const now = new Date();
-            // Wir suchen eine Buchung, die JETZT aktiv ist für diesen ESP
+            // Hier wird eine Buchung gesucht, die jetzt aktiv ist für diesen ESP
             const result = await db.query(
                 `SELECT user_id, username FROM bookings 
                  WHERE esp_id = $1 AND start_time <= $2 AND end_time >= $2`,
@@ -200,7 +199,6 @@ io.on('connection', (socket) => {
 
             const booking = result.rows[0];
 
-            // Hier trat der Fehler auf -> Jetzt ist socket.user.sub vorhanden!
             if (booking.user_id === socket.user.sub) {
                 console.log(`Erlaubt: ${socket.user.username} schaltet LED.`);
                 io.emit('cmd-led', command);
