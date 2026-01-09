@@ -63,7 +63,7 @@
     <script src="https://cdn.jsdelivr.net/npm/keycloak-js@26.2.2/lib/keycloak.min.js"></script>
 
 	<script type="module">
-		// 1. IMPORT: Wir laden Keycloak als modernes Modul
+		// 1. IMPORT: Keycloak als modernes Modul laden 
 		import Keycloak from 'https://cdn.jsdelivr.net/npm/keycloak-js@26.2.2/lib/keycloak.min.js';
 		import { io } from "https://cdn.socket.io/4.7.2/socket.io.esm.min.js"; // Socket.IO auch modern laden
 
@@ -95,7 +95,7 @@
 			document.getElementById('booking-modal').style.display = 'none';
 		};
 
-		// Deine Konfiguration
+		// Keycloak Konfiguration
 		const keycloakConfig = {
 			url: 'https://auth.birguel.de', 
 			realm: 'iot-project',
@@ -150,7 +150,7 @@
 			document.getElementById('map').style.display = 'block';
 			setTimeout(() => map.invalidateSize(), 100);
 
-			const loginBtn = document.getElementById('loginBtn'); // Button den wir gleich im HTML adden müssen
+			const loginBtn = document.getElementById('loginBtn'); 
 			
 			if (isAuthenticated) {
 				loginBtn.innerText = "Logout";
@@ -171,8 +171,8 @@
 				loginBtn.onclick = () => keycloak.login();
 				
 				document.getElementById('role-display').innerText = "(Gast)";
-				// Wir zeigen das Admin Panel NICHT an, aber wenn man auf den Marker klickt,
-				// zeigen wir einen Login-Hinweis Button an (siehe updateButtonUI Logik unten)
+				// Dasas Admin Panel wird nicht angezeigt, aber wenn man auf den Marker klickt,
+				// wird ein Login-Hinweis Button angezeigt (siehe updateButtonUI Logik unten)
 			}
 		}
 		
@@ -217,11 +217,11 @@
 		
 		
 		function updateControlPanel() {
-			// Wir zeigen den Button immer an, aber ändern seine Funktion
+			// Der Button wird immer angezeigt, aber seine Funktion ändert sich
 			// basierend auf dem Login Status
 			const panel = document.getElementById('admin-panel');
 			
-			// Wir blenden das Panel immer ein, damit man den Knopf sieht
+			// Das Panel wird immer eingeblendet, damit man den Knopf sieht
 			panel.style.display = 'block';
 			
 			const btn = document.getElementById('toggleBtn');
@@ -249,9 +249,9 @@
 			}
 		};
 
-		// --- BUTTON FUNKTIONEN (WICHTIG!) ---
-		// Da wir in einem Modul sind, müssen wir Funktionen, die im HTML (onclick=...)
-		// aufgerufen werden, manuell "öffentlich" machen:
+		// --- BUTTON FUNKTIONEN ---
+		// Da der Code in einem Modul ist, müssen Funktionen, die im HTML (onclick=...)
+		// aufgerufen werden, manuell "öffentlich" gemacht werden:
 
 		window.toggleLed = function() {
 			if(socket) socket.emit('toggle-led', { value: !isLedOn });
